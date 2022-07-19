@@ -7,10 +7,8 @@ import os
 from Input import Input
 from Environment import HCP, FCC
 from Print import PrintSimulationInfo, PrintXYZ, PrintFinalInfo, PrintEnd
-from InteractionEnergies import InteractionEnergies
-from Hamiltonian import Potential, Kinetic
-
-import Dynamical
+from InteractionEnergyP import InteractionEnergies
+from HamiltonianP import Potential, Kinetic
 
 class DynamicalSimulations:
     def __init__(self, args):
