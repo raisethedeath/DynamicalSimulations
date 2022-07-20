@@ -2,6 +2,7 @@ import numpy as np
 import os
 import scipy.special
 import time
+import math
 
 import InteractionEnergyF
 
@@ -158,6 +159,8 @@ class InteractionEnergies:
 
                         C += Sphere_harm * V_abinit * Weight
 
+                        exit()
+
                     C_jm[count] = C.real
                     count += 1
 
@@ -281,7 +284,6 @@ class InteractionEnergies:
                             [ sinA * cosB * cosG + cosA * sinG, -sinA * cosB * sinG + cosA * cosG, sinA * sinB],
                             [-sinB * cosG,                       sinB * sinG,                      cosB       ]])
 
-
             return Rot
 
         def IE(pos, FIT, absc, weight, quad, sig, cutoff):
@@ -309,8 +311,16 @@ class InteractionEnergies:
                 for j in range(0, jmax+1):
                     for m in range(-j, j+1):
                         if abs(C[count]) > cutoff:
+                            prefac = np.sqrt(((2*j+1)*math.factorial(j-m)) / ((4.*np.pi) * math.factorial(j+m)))
+
+                            ex = np.exp(complex(0,1) * m * phi)
+                            leg = scipy.special.lpmv(m, j, np.cos(theta))
+
+                            sh = prefac * ex * leg
+                            
                             Sphere_harm = scipy.special.sph_harm(m, j, phi, theta).real
                             V_e += Sphere_harm * C[count]
+
                         else:
                             pass
                         count += 1
@@ -340,16 +350,12 @@ class InteractionEnergies:
                         T = np.arccos(new_pos[2]/R)
                         P = np.arctan2(new_pos[1], new_pos[0])
 
-                        print (T, P)
-                    
                         if P < 0.:
                             P += 2 * np.pi
 
                         E_ = Leb(Coef, T, P)
 
                         E += E_ * weight_tot
-
-                        exit()
 
             return E / sum(weight)**3
 
@@ -388,13 +394,15 @@ class InteractionEnergies:
             count = 0
 
             for item in paraH_rot:
-                E += IE(item, 
+                E_ = IE(item, 
                          self.h2PolyFit, 
                          self.pH2AbscVal,  
                          self.pH2AbscWeight, 
                          self.args.smearH2, 
                          self.args.sigH2, 
                          self.args.lebThresh)
+
+                E += E_
 
                 if angle == 0 and timeCheck == False:
                     stop = time.time()
@@ -408,6 +416,8 @@ class InteractionEnergies:
                     exit()
 
                 count += 1
+
+            print (E)
 
             if len(self.hAtoms) != 0:
                 hAtoms_rot = np.matmul(self.hAtoms, Rot)
@@ -426,8 +436,10 @@ class InteractionEnergies:
             self.angleArray[angle, 6] = E
 
             if angle > angCounter[aCount]:
-                print ("\t%4d out of %4d Interaction Energies Calculated (%4d" % (angle*totalMol+count, totalAng*totalMol, (aCount+1)*10) + "%)")
+                #print ("\t%4d out of %4d Interaction Energies Calculated (%4d" % (angle*totalMol+count, totalAng*totalMol, (aCount+1)*10) + "%)")
                 aCount += 1
+
+        exit()
 
         if self.angleArray.shape == (5,1):
             self.angleArray = np.array(([self.angleArray]))

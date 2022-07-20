@@ -15,9 +15,9 @@ C
             DOUBLE PRECISION :: MAT(3,3)
           end function
           function IntEn(POS, FIT, ABSV, ABSW,
-     1                   QUAD, SIG, THRESH) RESULT(V)
+     1                   QUAD, SIG, THRESH) RESULT(E)
             DOUBLE PRECISION :: POS(3), FIT(:,:), ABSV(:), ABSW(:)
-            DOUBLE PRECISION :: SIG, THRESH, V
+            DOUBLE PRECISION :: SIG, THRESH, E
             INTEGER :: QUAD
           end function
         end interface
@@ -39,7 +39,7 @@ C
         DOUBLE PRECISION :: ALPHA, BETA, GAMA
         INTEGER :: NUMH2(2), NUMH(2), NUMANG(2), ANGLE, SITE
 
-        DOUBLE PRECISION :: E, ROTMAT(3,3), NEWPOS(3)
+        DOUBLE PRECISION :: E, E_, ROTMAT(3,3), NEWPOS(3)
 
         NUMH2  = SHAPE(H2POS)
         NUMH   = SHAPE(HPOS)
@@ -58,24 +58,19 @@ C
             NEWPOS = MATMUL(H2POS(SITE,:), ROTMAT)
 
             E = E + IntEn(NEWPOS, H2POLY, H2ABSV, H2ABSW,
-     1                   H2SMEAR, H2SIG, THRESH)
-
-            WRITE(*,*) E
-
-            CALL EXIT(0)
-
+     1                    H2SMEAR, H2SIG, THRESH)
 
           ENDDO
 
+          WRITE (*,*) E
 
+!          DO SITE=1,NUMH(1)
+!            NEWPOS = MATMUL(HPOS(SITE,:), ROTMAT)
+!
+!            E = E + IntEn(NEWPOS, HPOLY, HABSV, HABSW,
+!     1                   HSMEAR, HSIG, THRESH)
+!          ENDDO
 
-          
-
-
-
-          CALL EXIT(0)
-
-        
 
         ENDDO
 
@@ -89,7 +84,7 @@ C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
         DOUBLE PRECISION function IntEn(POS, FIT, ABSV, ABSW,
-     1          QUAD, SIG, THRESH) RESULT(V)
+     1          QUAD, SIG, THRESH) RESULT(E)
 
 C
 C       Calculate interaction energy
@@ -108,16 +103,16 @@ C
         DOUBLE PRECISION :: SIG, THRESH
         INTEGER :: QUAD
 
-        DOUBLE PRECISION :: WX, WY, WZ, W
+        DOUBLE PRECISION :: WX, WY, WZ
         INTEGER :: JX, JY, JZ
-        DOUBLE PRECISION :: NEWPOS(3), R, T, P
+        DOUBLE PRECISION :: NEWPOS(3), NEWPOSr(3), R, T, P
         DOUBLE PRECISION :: COEF(81)
         INTEGER :: C
 
         DOUBLE PRECISION :: PI
         PARAMETER (PI = 4 * ATAN(1.d0))
 
-        V = 0.d0
+        E = 0.d0
 
 
         DO JX=1,QUAD
@@ -132,14 +127,14 @@ C
 
               R = NORM2(NEWPOS)
 
-              NEWPOS = NEWPOS / R
+              NEWPOSr = NEWPOS / R
 
               DO C=1,81
                 COEF(C) = LebCoef(FIT(C,:), R)
               ENDDO
 
-              T = ACOS(NEWPOS(3)/R)
-              P = ATAN(NEWPOS(2), NEWPOS(1))
+              T = ACOS(NEWPOSr(3)/R)
+              P = ATAN(NEWPOSr(2), NEWPOSr(1))
 
               IF (P .LT. 0.d0) THEN
                 P = P + 2.d0*PI
@@ -147,15 +142,11 @@ C
 
               E = E + Lebedev(COEF,T,P,THRESH) * WX*WY*WZ
 
-              WRITE (*,*) E
-              
-
-              CALL EXIT(0)
-
             ENDDO
           ENDDO
         ENDDO
 
+        E = E / SUM(ABSW)**3
 
         End function
 
@@ -190,43 +181,132 @@ C       Calculate interaction energy using Lebedev quadrature
 C
 
         interface 
-          function Fac(N) RESULT(P)
-            INTEGER :: N
-            DOUBLE PRECISION :: P
-          end function
-          function Legendre(K,X) RESULT(VAL)
-            DOUBLE PRECISION :: X
-            INTEGER :: K
-            DOUBLE PRECISION :: VAL
+          function SphereHarm(J,M,T,P) RESULT(VAL)
+            DOUBLE PRECISION :: T, P, Val
+            INTEGER :: J, M
           end function
         end interface
 
         DOUBLE PRECISION :: COEF(81), T, P, THRESH
+        DOUBLE PRECISION :: SH
         INTEGER :: C, J, M
-        DOUBLE PRECISION :: EX, PREFAC, LEG
 
         DOUBLE PRECISION :: PI
         PARAMETER (PI = 4 * ATAN(1.d0))
 
         C = 1
+        E = 0.d0
 
-        DO J=1,8
+        DO J=0,8
           DO M=-J,J
             IF (ABS(COEF(C)) .GT. THRESH) THEN
-              PREFAC = SQRT(((2.d0*J+1.d0)/(4.d0*PI)) * 
-     1                      (Fac(J-M)/Fac(J+M)))
-              EX = EXP(COMPLEX(0,1) * M * P)
-              LEG = Legendre(J,COS(T))
-
-              WRITE (*,*) PREFAC, EX, LEG
-
-              CALL EXIT(0)
-
+              SH = SphereHarm(J,M,T,P)
+              E = E + SH * COEF(C)
             ENDIF
             C = C + 1
-
           ENDDO
         ENDDO
+
+        END function
+
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+        DOUBLE PRECISION function SphereHarm(J,M,T,P) RESULT(VAL)
+
+C      
+C       Compute Spherical Harmonics
+C
+
+        interface
+          function Fac(N) RESULT(P)
+            INTEGER :: N
+            DOUBLE PRECISION :: P
+          end function
+        end interface
+
+        DOUBLE PRECISION :: T, P
+        INTEGER :: J, M, K, N, KK
+        PARAMETER (K=1, KK=3)
+
+        DOUBLE PRECISION :: PREFAC
+        COMPLEX :: EX, SPHERE
+        DOUBLE PRECISION :: LEG(0:J,0:J), LEGN1(0:J), LEGN2(0:J)
+        DOUBLE PRECISION :: DLEG(0:J), ALEG, TEMPVAL
+        INTEGER :: D, DD
+
+        DOUBLE PRECISION :: PI
+        PARAMETER (PI = 4 * ATAN(1.d0))
+
+
+
+
+        ! Coefficients of Legendre Polynomials
+
+        LEG = 0
+
+        IF (J .EQ. 0) THEN
+         LEG(0,0) = 1
+        ELSE IF (J .EQ. 1) THEN
+         LEG(0,0) = 1
+         LEG(1,1) = 1
+        ELSE
+           LEG(0,0) = 1
+           LEG(1,1) = 1
+          DO N=2,J
+            LEGN2 = LEG(N-2,:) * (N-1)
+            
+            LEGN1 = 0
+            LEGN1(1:J) = LEG(N-1,0:J-1) * (2 * N - 1)
+
+            LEG(N,:) = (LEGN1 - LEGN2) / N
+          ENDDO
+        ENDIF
+
+        ! Mth Derivative of Legendre Polynomials
+
+        DLEG = LEG(J,:)
+
+        DO D=1,ABS(M)
+          DLEG(0:J-D) = DLEG(1:J)
+          DLEG(J-D+1) = 0
+
+          DO DD=0,J-D
+            DLEG(DD) = DLEG(DD) * (DD+1)
+          ENDDO
+        ENDDO
+
+        ! Value of Associate Legendre Polynomial at COS(T)
+
+        ALEG = (-1)**ABS(M) * (1 - COS(T)**2)**(ABS(M)/2.)
+
+        TEMPVAL = 0.d0
+
+        DO D=0,J
+          TEMPVAL = TEMPVAL + DLEG(D) * COS(T)**D
+        ENDDO
+
+        ALEG = ALEG * TEMPVAL
+
+        ! Change for M < 0
+
+        IF (M .LT. 0) THEN
+          ALEG = ALEG * (-1)**M * Fac(J-ABS(M)) / Fac(J+ABS(M))
+        ENDIF
+
+        ! Prefactor for spherical harmonics
+
+        PREFAC = SQRT(((2.d0*J+1.d0) * Fac(J-M)) /
+     1                ((4.d0*PI) * Fac(J+M)))
+
+        ! Complex eponential for spherical harmonic
+
+        EX = EXP(COMPLEX(0,1) * M * P)
+
+        ! Value of spherical harmonic
+
+        SPHERE = PREFAC * EX * ALEG
+
+        VAL = REAL(SPHERE)
 
         END function
 
@@ -243,47 +323,6 @@ C
         DO I=1,N
             P = P*I
         ENDDO
-
-        END function
-
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-
-        DOUBLE PRECISION function Legendre(K,X) RESULT(VAL)
-
-C
-C       Calculates Legendre polynomials using recursion formula
-C
-
-        DOUBLE PRECISION :: X
-        INTEGER :: K, N, M
-        PARAMETER (M=2)
-        DOUBLE PRECISION :: LEG(0:M)
-
-        K = M
-
-        if (K .EQ. 0) THEN
-          LEG(0) = 1.d0
-        
-        ELSE IF (K .EQ. 1) THEN
-          LEG(0) = 0.d0
-          LEG(1) = 1.d0
-
-        ELSE
-          DO 
-
-        ENDIF
-
-
-        !IF (K .GE. 2) THEN
-        !  DO N=1,K
-        !    LEG(N+1) = 2.d0 * N * LEG(N) - N * LEG(N-1)
-        !    LEG(N+1) = LEG(N+1) * (N+1.d0)
-        !  ENDDO
-        !ENDIF
-
-        WRITE (*,*) LEG
-
-        CALL EXIT(0)
 
         END function
 
@@ -311,15 +350,15 @@ C
 
         
         MAT(1,1) =  COSA * COSB * COSG - SINA * SING
-        MAT(1,2) = -COSA * COSB * SING - SINA * COSG
-        MAT(1,3) =  COSA * SING
+        MAT(2,1) = -COSA * COSB * SING - SINA * COSG
+        MAT(3,1) =  COSA * SINB
 
-        MAT(2,1) =  SINA * COSB * COSG + COSA * SING
+        MAT(1,2) =  SINA * COSB * COSG + COSA * SING
         MAT(2,2) = -SINA * COSB * SING + COSA * COSG
-        MAT(2,3) =  SINA * SINB
+        MAT(3,2) =  SINA * SINB
 
-        MAT(3,1) = -SINB * COSG
-        MAT(3,2) =  SINB * SING
+        MAT(1,3) = -SINB * COSG
+        MAT(2,3) =  SINB * SING
         MAT(3,3) =  COSB
 
         END function

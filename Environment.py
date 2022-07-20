@@ -68,6 +68,4 @@ def HCP(SHELL, Dis):
 
 def FCC(SHELL, Dis):
 
-    print ("HERE")
-
     return np.loadtxt("FCC.xyz")
