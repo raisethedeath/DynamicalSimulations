@@ -59,8 +59,6 @@ class InteractionEnergies:
                     self.hAbscVal = self.pH2AbscVal
                     self.hAbscWeight = self.pH2AbscWeight
 
-
-
                 InteractionEnergyF.interactionenergy(self.angleArray,
                                                     self.paraH,
                                                     self.h2PolyFit,
@@ -338,9 +336,11 @@ class InteractionEnergies:
 
                         for j in range (81):
                             Coef[j] = np.poly1d(FIT[j,:])(R)
-
+                        
                         T = np.arccos(new_pos[2]/R)
                         P = np.arctan2(new_pos[1], new_pos[0])
+
+                        print (T, P)
                     
                         if P < 0.:
                             P += 2 * np.pi
@@ -348,8 +348,6 @@ class InteractionEnergies:
                         E_ = Leb(Coef, T, P)
 
                         E += E_ * weight_tot
-
-                        print (E_)
 
                         exit()
 
