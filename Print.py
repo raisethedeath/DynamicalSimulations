@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from datetime import timedelta
 
 def PrintSimulationInfo(*args):
     arg = args[0]
@@ -95,7 +96,9 @@ def PrintFinalInfo(*args):
 
 def PrintEnd(*args):
     start = args[0]
+    string = "Total Excecution Time:"
     print ("\n")
     print ("\tEnd of Simulation")
-    print ("\tTotal Excecution Time: ", round(time.time() - start, 7), "s")
+    e_Time = str(timedelta(seconds=start)).split(":")
+    print ("\t" + string + " - ", "%s hours, %s minutes, %s seconds" %(e_Time[0], e_Time[1], e_Time[2]), "\n")
     

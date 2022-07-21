@@ -2,6 +2,7 @@ import numpy as np
 import os
 import time
 import math
+from datetime import timedelta
 
 import HamiltonianF
 
@@ -59,12 +60,11 @@ class Potential:
         print ()
 
     def PrintTime(self, val, string):
-            '''Function used to print time value'''
-            minutes, seconds = divmod(val, 60)
-            hours,   minutes = divmod(minutes, 60)
-            days,    hours   = divmod(hours, 24)
-            print ("\t" + string + " - ", "%d days, %d hours, %d minutes, %d seconds" %(days, hours, minutes, seconds), "\n")
-            return
+        '''Function used to print time value'''
+        e_Time = str(timedelta(seconds=val)).split(":")
+        print ("\t" + string + " - ", "%s hours, %s minutes, %s seconds" %(e_Time[0], e_Time[1], e_Time[2]), "\n")
+        return
+        return
 
     def loadHamil(self):
         for j in range(self.args.J, -1, -1):

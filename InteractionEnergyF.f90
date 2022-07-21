@@ -37,13 +37,27 @@ C
         DOUBLE PRECISION :: THRESH
 
         DOUBLE PRECISION :: ALPHA, BETA, GAMA
-        INTEGER :: NUMH2(2), NUMH(2), NUMANG(2), ANGLE, SITE
+        INTEGER :: NUMH2(2), NUMH(2), NUMANG(2), ANGLE, SITE, TOTMOL
+        INTEGER :: ANGC, ANGCC
 
-        DOUBLE PRECISION :: E, E_, ROTMAT(3,3), NEWPOS(3)
+        DOUBLE PRECISION :: E, ROTMAT(3,3), NEWPOS(3)
+        
+        DOUBLE PRECISION :: START, FINISH, TIMEVAL
 
         NUMH2  = SHAPE(H2POS)
         NUMH   = SHAPE(HPOS)
         NUMANG = SHAPE(ENERGY)
+
+        ANGC = NUMANG(1) / 10
+        ANGCC = 1
+
+        IF (NUMH(2) .NE. 1) THEN
+          TOTMOL = NUMH2(1) + NUMH(1)
+        ELSE
+          TOTMOL = NUMH2(1)
+        ENDIF
+
+        WRITE(*,*)
 
         DO ANGLE=1,NUMANG(1)
           ALPHA = ENERGY(ANGLE,1)
@@ -54,27 +68,55 @@ C
 
           ROTMAT = Rotate(ALPHA, BETA, GAMA)
 
+          IF (ANGLE .EQ. 1) THEN
+            CALL CPU_TIME(START)
+          ENDIF
+
           DO SITE=1,NUMH2(1)
             NEWPOS = MATMUL(H2POS(SITE,:), ROTMAT)
 
             E = E + IntEn(NEWPOS, H2POLY, H2ABSV, H2ABSW,
      1                    H2SMEAR, H2SIG, THRESH)
 
+            IF (ANGLE .EQ. 1) THEN
+              IF (SITE .EQ. 1) THEN
+                CALL CPU_TIME(FINISH)
+                TIMEVAL = FINISH - START
+                TIMEVAL = TIMEVAL * NUMANG(1) * TOTMOL
+
+                WRITE(*,*) "       Estimated time for calculating"  ,
+     1                     " all interaction energies - ",
+     2                      TIMEVAL, " seconds"
+                WRITE (*,*)
+
+              ENDIF
+            ENDIF
+
           ENDDO
+        
+          IF (NUMH(2) .NE. 1) THEN
+            DO SITE=1,NUMH(1)
+              NEWPOS = MATMUL(HPOS(SITE,:), ROTMAT)
 
-          WRITE (*,*) E
+              E = E + IntEn(NEWPOS, HPOLY, HABSV, HABSW,
+     1                      HSMEAR, HSIG, THRESH)
+            ENDDO
+          ENDIF
 
-!          DO SITE=1,NUMH(1)
-!            NEWPOS = MATMUL(HPOS(SITE,:), ROTMAT)
-!
-!            E = E + IntEn(NEWPOS, HPOLY, HABSV, HABSW,
-!     1                   HSMEAR, HSIG, THRESH)
-!          ENDDO
+          ENERGY(ANGLE,7) = E
 
+          if (ANGLE .GT. ANGC*ANGCC) THEN
+            WRITE(*,*) "  ", (ANGLE*TOTMOL), " out of ",
+     1                       (TOTMOL*NUMANG(1)),
+     2         "interaction energies calculated"
+            ANGCC = ANGCC + 1
+          ENDIF
 
         ENDDO
 
-
+        OPEN (unit=13, file='E.en', status='replace')
+        WRITE (13,*) ENERGY(:,7)
+        CLOSE (unit=13)
 
         
 
@@ -350,15 +392,15 @@ C
 
         
         MAT(1,1) =  COSA * COSB * COSG - SINA * SING
-        MAT(2,1) = -COSA * COSB * SING - SINA * COSG
-        MAT(3,1) =  COSA * SINB
+        MAT(1,2) = -COSA * COSB * SING - SINA * COSG
+        MAT(1,3) =  COSA * SINB
 
-        MAT(1,2) =  SINA * COSB * COSG + COSA * SING
+        MAT(2,1) =  SINA * COSB * COSG + COSA * SING
         MAT(2,2) = -SINA * COSB * SING + COSA * COSG
-        MAT(3,2) =  SINA * SINB
+        MAT(2,3) =  SINA * SINB
 
-        MAT(1,3) = -SINB * COSG
-        MAT(2,3) =  SINB * SING
+        MAT(3,1) = -SINB * COSG
+        MAT(3,2) =  SINB * SING
         MAT(3,3) =  COSB
 
         END function

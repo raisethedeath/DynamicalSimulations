@@ -3,6 +3,7 @@ import pathlib
 import sys
 import time
 import os
+from datetime import timedelta
 
 from Input import Input
 from Environment import HCP, FCC
@@ -112,7 +113,7 @@ class DynamicalSimulations:
         self.val, self.vec = self.Diagonalize(self.potentialHamil + self.kineticHamil)
 
         PrintFinalInfo(self.args.print, self.val, self.vec)
-        PrintEnd(self.start)
+        PrintEnd(time.time() - self.start)
 
 
 

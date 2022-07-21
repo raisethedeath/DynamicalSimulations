@@ -3,6 +3,7 @@ import os
 import scipy.special
 import time
 import math
+from datetime import timedelta
 
 import InteractionEnergyF
 
@@ -36,24 +37,21 @@ class InteractionEnergies:
             print ("\t\t-Interaction energies")
 
         else:
-
             self.QuadValues(*args.rotQuad)
-            #self.FitSurface()
+            self.FitSurface()
             self.GaussianSmearing()
 
-            self.h2Coef = np.loadtxt('H2O-pH2.leb')
-            #self.hCoef = np.loadtxt('H2O-H.leb')
+            start = time.time()
 
-            R = np.loadtxt(self.path + "/PES/R").transpose()
-            self.h2PolyFit = np.zeros(((self.jMax+1)**2, self.args.polyDeg+1))
-
-            for j in range((self.jMax+1)**2):
-                self.h2PolyFit[j,:] = np.polyfit(R, self.h2Coef[j,:], self.args.polyDeg)
+            print ("\tCalculating all interaction energies using the", end=' ')
 
             if self.args.method == 'python':
+                print ("python method")
+
                 self.GetEnergyValues()
 
             elif self.args.method == 'fortran':
+                print ("fortran method")
                 if len(self.hAtoms) == 0:
                     self.hAtoms = np.zeros((1,1))
                     self.hPolyFit = self.h2PolyFit
@@ -75,7 +73,25 @@ class InteractionEnergies:
                                                     self.args.sigH,
                                                     self.args.lebThresh
                                                     )
-                exit()
+
+                self.angleArray[:,6] = np.loadtxt("E.en")
+
+            print ("\n\n")
+            print ("\tCalculation of interaction energies completed.")
+
+            np.savetxt("Energy.en", self.angleArray)
+
+            stop = time.time()
+            val = round((stop - start), 3)
+            self.PrintTime(val, "Total time")
+            print ()
+
+    def PrintTime(self, val, string):
+        '''Function used to print time value'''
+        e_Time = str(timedelta(seconds=val)).split(":")
+        print ("\t" + string + " - ", "%s hours, %s minutes, %s seconds" %(e_Time[0], e_Time[1], e_Time[2]), "\n")
+        return
+
 
 
     def QuadValues(self, *rotQuad):
@@ -158,8 +174,6 @@ class InteractionEnergies:
                         Weight      = W[pts]
 
                         C += Sphere_harm * V_abinit * Weight
-
-                        exit()
 
                     C_jm[count] = C.real
                     count += 1
@@ -359,15 +373,6 @@ class InteractionEnergies:
 
             return E / sum(weight)**3
 
-        def PrintTime(val, string):
-            '''Function used to print time value'''
-            minutes, seconds = divmod(val, 60)
-            hours,   minutes = divmod(minutes, 60)
-            days,    hours   = divmod(hours, 24)
-            print ("\t" + string + " - ", "%d days, %d hours, %d minutes, %d seconds" %(days, hours, minutes, seconds), "\n")
-            return
-
-
         print ()
         
         totalMol = self.paraH.shape[0] + self.hAtoms.shape[0]
@@ -378,7 +383,7 @@ class InteractionEnergies:
 
         timeCheck = False
 
-        start = time.time()
+        start_ = time.time()
 
         for angle in range(self.angleArray.shape[0]):
             alpha  = self.angleArray[angle, 0]
@@ -393,7 +398,7 @@ class InteractionEnergies:
 
             count = 0
 
-            for item in paraH_rot:
+            for i, item in enumerate(paraH_rot):
                 E_ = IE(item, 
                          self.h2PolyFit, 
                          self.pH2AbscVal,  
@@ -406,9 +411,9 @@ class InteractionEnergies:
 
                 if angle == 0 and timeCheck == False:
                     stop = time.time()
-                    val = round((stop - start) * totalMol * totalAng, 3)
+                    val = round((stop - start_) * totalMol * totalAng, 3)
 
-                    PrintTime(val, "Estimated time for Calculating all Interaction Energies")
+                    PrintTime(val, "Estimated time for Calculating all interaction energies")
 
                     timeCheck = True
 
@@ -416,8 +421,6 @@ class InteractionEnergies:
                     exit()
 
                 count += 1
-
-            print (E)
 
             if len(self.hAtoms) != 0:
                 hAtoms_rot = np.matmul(self.hAtoms, Rot)
@@ -436,10 +439,8 @@ class InteractionEnergies:
             self.angleArray[angle, 6] = E
 
             if angle > angCounter[aCount]:
-                #print ("\t%4d out of %4d Interaction Energies Calculated (%4d" % (angle*totalMol+count, totalAng*totalMol, (aCount+1)*10) + "%)")
+                print ("\t%4d out of %4d Interaction Energies Calculated (%4d" % (angle*totalMol+count, totalAng*totalMol, (aCount+1)*10) + "%)")
                 aCount += 1
-
-        exit()
 
         if self.angleArray.shape == (5,1):
             self.angleArray = np.array(([self.angleArray]))

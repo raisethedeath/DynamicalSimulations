@@ -36,15 +36,15 @@ C
         LOGICAL :: TIMECHECK
         DOUBLE PRECISION :: TIMEVAL1, TIMEVAL2, TIMEVAL
         DOUBLE PRECISION :: CORNER
+        INTEGER :: HC
 
-        DOUBLE PRECISION :: rTIME
         DOUBLE PRECISION :: WIGNERD
 
         DOUBLE PRECISION :: PI
         PARAMETER (PI = 4 * ATAN(1.d0))
 
         WRITE (*,*)
-        WRITE (*,*) "        Constructing pre-Hamiltonian arrays"
+        WRITE (*,*) "       Constructing pre-Hamiltonian arrays"
         WRITE (*,*)
 
         COL = 1
@@ -83,7 +83,7 @@ C
         CLOSE (unit=12)
 
 
-
+        HC = 1
         TIMECHECK = .FALSE.
 
         DO COL = 1, DIMEN
@@ -137,32 +137,32 @@ C
 
               ENDDO
 
-                CALL CPU_TIME(TIMEVAL2)
+              CALL CPU_TIME(TIMEVAL2)
 
-                IF (TIMECHECK .EQV. .FALSE.) THEN
-                  TIMEVAL = (TIMEVAL2-TIMEVAL1)
-                  TIMEVAL = TIMEVAL * DIMEN*DIMEN
+              IF (TIMECHECK .EQV. .FALSE.) THEN
+                TIMEVAL = (TIMEVAL2-TIMEVAL1)
+                TIMEVAL = TIMEVAL * DIMEN*DIMEN
 
-                  CORNER = (DIMEN*DIMEN) / 2. + DIMEN/2.
-                  TIMEVAL = TIMEVAL * (CORNER / (DIMEN*DIMEN))
+                CORNER = (DIMEN*DIMEN) / 2. + DIMEN/2.
+                TIMEVAL = TIMEVAL * (CORNER / (DIMEN*DIMEN))
 
-                  WRITE (*,*) "        Estimated time to populate"  , 
-     1                     " Hamiltonian matrix - ", 
-     2                      TIMEVAL, " seconds"
-                  WRITE (*,*)
+                WRITE (*,*) "       Estimated time to populate"  , 
+     1                   " Hamiltonian matrix - ", 
+     2                    TIMEVAL, " seconds"
+                WRITE (*,*)
 
-                  TIMECHECK = .TRUE.
+                TIMECHECK = .TRUE.
                   
-                ENDIF
+              ENDIF
 
-            HAMIL(COL, ROW) = REAL(H)
-            HAMIL(ROW, COL) = REAL(H)
+              HAMIL(COL, ROW) = REAL(H)
+              HAMIL(ROW, COL) = REAL(H)
 
-            END IF
+            ENDIF
 
           ENDDO
 
-        WRITE (*,*) "  ", (ROW+COL*DIMEN+1), " out of ", DIMEN*DIMEN, 
+        WRITE (*,*) "  ", (COL*DIMEN), " out of ", DIMEN*DIMEN, 
      1         "entries in the Rotational Hamiltonian Matrix populated"
 
         ENDDO
@@ -176,28 +176,6 @@ C
 
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-
-        DOUBLE PRECISION function rtIME()
-
-C       
-C       Calculate the current time of the calculation
-C
-
-        INTEGER values(8)
-        DOUBLE PRECISION TIMEVAL
-
-        CALL DATE_AND_TIME(values=values)
-
-        TIMEVAL = values(5)*60.              ! HOURS TO MINUTES
-        TIMEVAL = (rTIME + values(6))*60     ! MINUTES TO SECONDS
-        TIMEVAL = (rTIME + values(7))*1e3    ! SECONDS TO mSECONDS
-        TIMEVAL = rTIME + values(8)
-
-        rTIME = TIMEVAL
-
-        END
-                      
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
         DOUBLE PRECISION function WIGNERD(J, K, M, NMIN, NMAX, BETA)
 C 
