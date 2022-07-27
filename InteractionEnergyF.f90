@@ -78,6 +78,10 @@ C
             E = E + IntEn(NEWPOS, H2POLY, H2ABSV, H2ABSW,
      1                    H2SMEAR, H2SIG, THRESH)
 
+            WRITE(*,*) E
+
+            CALL EXIT(0)
+
             IF (ANGLE .EQ. 1) THEN
               IF (SITE .EQ. 1) THEN
                 CALL CPU_TIME(FINISH)
@@ -169,8 +173,6 @@ C
 
               R = NORM2(NEWPOS)
 
-              NEWPOSr = NEWPOS / R
-
               DO C=1,81
                 COEF(C) = LebCoef(FIT(C,:), R)
               ENDDO
@@ -183,6 +185,9 @@ C
               ENDIF
 
               E = E + Lebedev(COEF,T,P,THRESH) * WX*WY*WZ
+
+              WRITE(*,*) E / (WX*WY*WZ)
+              CALL EXIT(0)
 
             ENDDO
           ENDDO
@@ -244,6 +249,7 @@ C
             IF (ABS(COEF(C)) .GT. THRESH) THEN
               SH = SphereHarm(J,M,T,P)
               E = E + SH * COEF(C)
+              WRITE(*,*) J, M, C, SH, COEF(C), E
             ENDIF
             C = C + 1
           ENDDO

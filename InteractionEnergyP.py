@@ -79,6 +79,9 @@ class InteractionEnergies:
             print ("\n\n")
             print ("\tCalculation of interaction energies completed.")
 
+            if self.angleArray.shape == (5,1):
+                self.angleArray = np.array(([self.angleArray]))
+
             np.savetxt("Energy.en", self.angleArray)
 
             stop = time.time()
@@ -413,7 +416,7 @@ class InteractionEnergies:
                     stop = time.time()
                     val = round((stop - start_) * totalMol * totalAng, 3)
 
-                    PrintTime(val, "Estimated time for Calculating all interaction energies")
+                    self.PrintTime(val, "Estimated time for Calculating all interaction energies")
 
                     timeCheck = True
 
@@ -442,16 +445,5 @@ class InteractionEnergies:
                 print ("\t%4d out of %4d Interaction Energies Calculated (%4d" % (angle*totalMol+count, totalAng*totalMol, (aCount+1)*10) + "%)")
                 aCount += 1
 
-        if self.angleArray.shape == (5,1):
-            self.angleArray = np.array(([self.angleArray]))
-
-        print ("\n\n")
-        print ("\tCalculation of interaction energies completed.")
-        
-        np.savetxt("Energy.en", self.angleArray)
-
-        stop = time.time()
-        val = round((stop - start), 3)
-        PrintTime(val, "Total time")
-        print ()
+        return
 
