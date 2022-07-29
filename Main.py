@@ -61,14 +61,14 @@ class DynamicalSimulations:
                     self.args.h_atoms = sorted(self.args.h_atoms)[:-1]
             except:
                 pass
-            print ("\tH-atoms   found at positions - ", *self.args.h_atoms)
+            print ("\tH-atoms   found at position(s) - ", *self.args.h_atoms)
         if len(self.args.holes) > 0:
             try:
                 while max(self.args.holes) > self.paraH.shape[0]-1:
                     self.args.holes = sorted(self.args.holes)[:-1]
             except:
                 pass
-            print ("\tVacancies found at positions - ", *self.args.holes)
+            print ("\tVacancies found at position(s) - ", *self.args.holes)
         print ()
 
 
