@@ -158,6 +158,8 @@ C
               HAMIL(COL, ROW) = REAL(H)
               HAMIL(ROW, COL) = REAL(H)
 
+              !WRITE(*,*) REAL(H)
+
             ENDIF
 
           ENDDO
