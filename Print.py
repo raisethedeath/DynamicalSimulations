@@ -63,7 +63,7 @@ def PrintFinalInfo(*args):
             if j == 0:
                 print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], 0))
             else:
-                print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], eigval[j] - eigval[j-1]))
+                print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], eigval[j] - eigval[0]))
 
     elif val == 2:
         # PRINT N LOWEST EIGENVALUES AND EIGENVECTORS
@@ -86,7 +86,7 @@ def PrintFinalInfo(*args):
             if j == 0:
                 print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], 0))
             else:
-                print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], eigval[j] - eigval[j-1]))
+                print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(j, eigval[j], eigval[j] - eigval[0]))
             print ("\t- - - - - - - - - - - - - - - - - - - -")
             for jj in range(numvec+1):
                 print ("\t{:>6d}{:>16.8f}{:>16.8f}".format(jj, eigvec[jj][j], eigvec[jj][j]**2))
